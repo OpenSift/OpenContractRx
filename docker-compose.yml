@@ -1,69 +1,79 @@
-opencontractrx/
-  LICENSE
-  README.md
-  CONTRIBUTING.md
-  CODE_OF_CONDUCT.md
-  SECURITY.md
-  docker-compose.yml
-  .env.example
-  .gitignore
-  .github/
-    workflows/
-      ci.yml
-    ISSUE_TEMPLATE/
-      bug_report.yml
-      feature_request.yml
-  apps/
-    api/
-      Dockerfile
-      pyproject.toml
-      README.md
-      src/
-        opencontractrx_api/
-          __init__.py
-          main.py
-          core/
-            __init__.py
-            config.py
-            logging.py
-            security.py
-          db/
-            __init__.py
-            session.py
-          routers/
-            __init__.py
-            health.py
-            contracts.py
-    worker/
-      Dockerfile
-      pyproject.toml
-      README.md
-      src/
-        opencontractrx_worker/
-          __init__.py
-          celery_app.py
-          tasks/
-            __init__.py
-            ingest.py
-    web/
-      Dockerfile
-      package.json
-      next.config.js
-      README.md
-      app/
-        layout.tsx
-        page.tsx
-        contracts/
-          page.tsx
-      styles/
-        globals.css
-  packages/
-    core/
-      pyproject.toml
-      README.md
-      src/
-        opencontractrx_core/
-          __init__.py
-          schemas/
-            __init__.py
-            contract.py
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-opencontractrx}
+      POSTGRES_USER: ${POSTGRES_USER:-opencontractrx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opencontractrx}
+    ports:
+      - "5432:5432"
+    volumes:
+      - opencontractrx_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opencontractrx} -d ${POSTGRES_DB:-opencontractrx}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - opencontractrx_minio:/data
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./apps/worker
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  opencontractrx_pgdata:
+  opencontractrx_minio:
