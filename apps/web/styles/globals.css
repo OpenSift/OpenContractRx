@@ -50,3 +50,26 @@ a:hover { text-decoration: underline; }
   overflow-x: auto;
   font-size: 12px;
 }
+
+input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.25);
+  color: inherit;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.16);
+}

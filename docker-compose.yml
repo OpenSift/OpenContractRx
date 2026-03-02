@@ -45,6 +45,20 @@ services:
       db:
         condition: service_healthy
 
+  api-test:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.test
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - test
+
   worker:
     build:
       context: ./apps/worker

@@ -32,6 +32,12 @@ Web UI: http://localhost:3000
 API docs: http://localhost:8000/docs
 MinIO console: http://localhost:9001 (login from .env)
 
+## Run API tests
+Use the dedicated API test service:
+```bash
+docker compose --profile test run --rm api-test
+```
+
 ## Initial endpoints
 
 GET /healthz
