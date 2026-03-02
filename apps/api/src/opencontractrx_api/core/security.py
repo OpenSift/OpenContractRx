@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional
 
-from fastapi import Header, HTTPException, status
+from fastapi import HTTPException, Security, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import hmac
 import hashlib
 import base64
@@ -9,6 +9,8 @@ import json
 import time
 
 from opencontractrx_api.core.config import settings
+
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @dataclass(frozen=True)
@@ -34,7 +36,7 @@ def _sign(message: bytes) -> str:
 def mint_dev_token(sub: str, role: str, ttl_seconds: int = 3600) -> str:
     """
     Dev-only token (not a full JWT implementation).
-    Intended for local testing until proper OIDC/JWT integration is added.
+    Intended for local testing until proper OIDC/JWT verification is added.
     """
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {
@@ -50,27 +52,33 @@ def mint_dev_token(sub: str, role: str, ttl_seconds: int = 3600) -> str:
     return f"{header_b64}.{payload_b64}.{sig_b64}"
 
 
-def get_auth_context(authorization: Optional[str] = Header(default=None)) -> AuthContext:
+def get_auth_context(
+    creds: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+) -> AuthContext:
     """
-    Very small dev auth. Production should use OIDC/JWT verification.
+    Bearer auth dependency with OpenAPI/Swagger integration.
     """
-    if not authorization or not authorization.startswith("Bearer "):
+    if creds is None or creds.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
 
-    token = authorization.removeprefix("Bearer ").strip()
+    token = creds.credentials.strip()
+
     parts = token.split(".")
     if len(parts) != 3:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
 
     header_b64, payload_b64, sig_b64 = parts
     signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
+
     expected_sig = _sign(signing_input)
     if not hmac.compare_digest(sig_b64, expected_sig):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad signature")
 
     payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
+
     if payload.get("iss") != settings.jwt_issuer:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad issuer")
+
     if int(payload.get("exp", 0)) < int(time.time()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
 

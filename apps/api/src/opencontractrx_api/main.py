@@ -3,6 +3,7 @@ from opencontractrx_api.core.config import settings
 from opencontractrx_api.core.logging import configure_logging
 from opencontractrx_api.routers.health import router as health_router
 from opencontractrx_api.routers.contracts import router as contracts_router
+from opencontractrx_api.routers.auth import router as auth_router
 
 configure_logging()
 
@@ -12,6 +13,7 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(contracts_router)
 
 
