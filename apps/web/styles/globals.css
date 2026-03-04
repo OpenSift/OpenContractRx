@@ -73,3 +73,22 @@ button {
 button:hover {
   background: rgba(255,255,255,0.16);
 }
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button-link {
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  text-decoration: none;
+  background: rgba(255,255,255,0.16);
+}

@@ -1,4 +1,4 @@
-# OpenContractRx# OpenContractRx
+# OpenContractRx
 
 Open-source contract intelligence + renewal + drafting platform built for hospitals.
 
@@ -43,6 +43,23 @@ docker compose --profile test run --rm api-test
 GET /healthz
 POST /contracts/upload (placeholder - stores metadata file upload wiring comes next)
 GET /contracts
+GET /integrations
+
+## AI integrations (ChatGPT, Codex, Claude, Claude Code)
+- API key connection:
+  - `POST /integrations/{provider}/api-key`
+- OAuth flow:
+  - `GET /integrations/{provider}/oauth/start`
+  - `GET /integrations/{provider}/oauth/callback`
+- Connection test:
+  - `POST /integrations/{provider}/test`
+
+Set OAuth env vars per provider when you want OAuth enabled:
+- `*_OAUTH_CLIENT_ID`
+- `*_OAUTH_CLIENT_SECRET`
+- `*_OAUTH_AUTH_URL`
+- `*_OAUTH_TOKEN_URL`
+- `*_OAUTH_REDIRECT_URI`
 
 ## Security posture (baseline)
 RBAC scaffolding (role claims)
